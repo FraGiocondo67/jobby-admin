@@ -1,0 +1,28 @@
+# Render Blueprint per jobby-admin (pannello di amministrazione custom, Blocco 8).
+# Servizio separato da jobby-backend (repo Jobby_Emergent) — stesso progetto
+# Supabase Auth, nessuna dipendenza diretta tra i due servizi a parte le
+# chiamate REST a runtime (vedi lib/api.ts).
+#
+# Le variabili NEXT_PUBLIC_* sono "build-time" per Next.js: vengono incorporate
+# nel bundle JS durante `next build`, quindi devono essere presenti anche in
+# fase di build (Render le espone sia in build che a runtime di default).
+services:
+  - type: web
+    name: jobby-admin
+    runtime: node
+    region: frankfurt
+    plan: starter
+    branch: main
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start -- -p $PORT
+    healthCheckPath: /login
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 20.18.0
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        value: https://axiemfglsjknecvwtypm.supabase.co
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: NEXT_PUBLIC_BACKEND_URL
+        value: https://jobby-backend-a2s1.onrender.com
