@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiFetch, ApiError } from "@/lib/api";
+import MestieriManager from "@/components/MestieriManager";
 
 type AdminCategoryRow = {
   id: string;
@@ -45,6 +46,7 @@ export default function CategoriesTable() {
   const [saving, setSaving] = useState(false);
   const [creating, setCreating] = useState<typeof EMPTY_NEW | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [showMestieri, setShowMestieri] = useState(false);
 
   useEffect(() => {
     load();
@@ -193,6 +195,11 @@ export default function CategoriesTable() {
                     <button className="btn btn-sm" onClick={() => setEditing(c)}>
                       Modifica
                     </button>
+                    {c.slug === "artigiani" && (
+                      <button className="btn btn-sm" onClick={() => setShowMestieri(true)}>
+                        Mestieri
+                      </button>
+                    )}
                     <button
                       className={`btn btn-sm ${c.is_active ? "" : "btn-accent"}`}
                       disabled={busyId === c.id}
@@ -322,6 +329,8 @@ export default function CategoriesTable() {
           </div>
         </div>
       )}
+
+      {showMestieri && <MestieriManager onClose={() => setShowMestieri(false)} />}
     </div>
   );
 }
