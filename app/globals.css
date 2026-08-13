@@ -353,6 +353,14 @@ tr:last-child td {
   color: var(--text-muted, #666);
 }
 
+/* BLOCCO 9: form Commissioni (components/FeeSettings.tsx). */
+.fee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
 .filters-bar {
   display: flex;
   gap: 10px;

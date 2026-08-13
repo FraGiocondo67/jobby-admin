@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/AuthProvider";
 const NAV_ITEMS = [
   { href: "/users", label: "Utenti", disabled: false },
   { href: "/categories", label: "Categorie", disabled: false },
+  { href: "/fees", label: "Commissioni", disabled: false },
   { href: "/disputes", label: "Dispute", disabled: true },
   { href: "/reviews", label: "Recensioni", disabled: true },
 ];

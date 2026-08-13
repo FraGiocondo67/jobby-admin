@@ -28,12 +28,14 @@ const TYPE_LABEL: Record<string, string> = {
   payment_service: "Pagamento",
 };
 
-/** Gestione categorie: GET/PUT /admin/categories (routers/categories.py,
+const EMPTY_NEW = { slug: "", name_it: "", name_en: "", category_type: "standard", icon: "", sort_order: 0, requires_kyc: true };
+
+/** Gestione categorie: GET/POST/PUT /admin/categories (routers/categories.py,
  * Blocco 9 — prima non esisteva alcuna gestione admin su Postgres, solo una
  * versione Mongo ritirata nel Blocco 7, vedi commento nel router). Azioni
- * disponibili: attiva/disattiva e modifica nome/icona/ordinamento. Niente
- * commissione: in questo schema non è un campo della categoria (gestita
- * per-verticale altrove), a differenza del vecchio modello Mongo. */
+ * disponibili: crea, attiva/disattiva e modifica nome/icona/ordinamento.
+ * Niente commissione: in questo schema non è un campo della categoria
+ * (gestita per-verticale altrove), a differenza del vecchio modello Mongo. */
 export default function CategoriesTable() {
   const [rows, setRows] = useState<AdminCategoryRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +43,8 @@ export default function CategoriesTable() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [editing, setEditing] = useState<AdminCategoryRow | null>(null);
   const [saving, setSaving] = useState(false);
+  const [creating, setCreating] = useState<typeof EMPTY_NEW | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   useEffect(() => {
     load();
@@ -93,6 +97,37 @@ export default function CategoriesTable() {
     }
   }
 
+  async function handleCreate() {
+    if (!creating) return;
+    setCreateError(null);
+    const slug = creating.slug.trim();
+    if (!slug || !creating.name_it.trim() || !creating.name_en.trim()) {
+      setCreateError("Slug, nome IT e nome EN sono obbligatori");
+      return;
+    }
+    setSaving(true);
+    try {
+      const created = await apiFetch<AdminCategoryRow>(`/api/admin/categories`, {
+        method: "POST",
+        body: {
+          slug,
+          name_it: creating.name_it.trim(),
+          name_en: creating.name_en.trim(),
+          category_type: creating.category_type,
+          icon: creating.icon || null,
+          sort_order: creating.sort_order,
+          requires_kyc: creating.requires_kyc,
+        },
+      });
+      setRows((prev) => (prev ? [...prev, created] : [created]));
+      setCreating(null);
+    } catch (e) {
+      setCreateError(e instanceof ApiError ? e.message : "Errore durante la creazione");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   const filtered = rows?.filter((r) => !type || r.category_type === type) ?? null;
 
   return (
@@ -101,6 +136,12 @@ export default function CategoriesTable() {
       <div className="card-desc">
         Standard (verticali con configuratore dedicato), Prossimità (attività fisiche vicine) e Servizi di pagamento.
         Le categorie disattivate non compaiono nella app né su jobby-web.
+      </div>
+
+      <div className="row-actions" style={{ marginBottom: 10 }}>
+        <button className="btn btn-accent btn-sm" onClick={() => { setCreateError(null); setCreating({ ...EMPTY_NEW }); }}>
+          + Nuova categoria
+        </button>
       </div>
 
       <div className="tabs">
@@ -210,6 +251,72 @@ export default function CategoriesTable() {
               </button>
               <button className="btn btn-accent btn-sm" disabled={saving} onClick={handleSaveEdit}>
                 {saving ? "Salvataggio..." : "Salva"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {creating && (
+        <div className="modal-backdrop" onClick={() => !saving && setCreating(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="card-title">Nuova categoria</div>
+            {createError && <div className="error-box">{createError}</div>}
+            <label className="field-label">Slug (identificativo univoco, es. "giardinaggio")</label>
+            <input
+              className="search-input"
+              value={creating.slug}
+              onChange={(e) => setCreating({ ...creating, slug: e.target.value })}
+            />
+            <label className="field-label">Nome (IT)</label>
+            <input
+              className="search-input"
+              value={creating.name_it}
+              onChange={(e) => setCreating({ ...creating, name_it: e.target.value })}
+            />
+            <label className="field-label">Nome (EN)</label>
+            <input
+              className="search-input"
+              value={creating.name_en}
+              onChange={(e) => setCreating({ ...creating, name_en: e.target.value })}
+            />
+            <label className="field-label">Tipo</label>
+            <select
+              className="select-input"
+              value={creating.category_type}
+              onChange={(e) => setCreating({ ...creating, category_type: e.target.value })}
+            >
+              <option value="standard">Standard</option>
+              <option value="proximity">Prossimità</option>
+              <option value="payment_service">Servizio di pagamento</option>
+            </select>
+            <label className="field-label">Icona (emoji)</label>
+            <input
+              className="search-input"
+              value={creating.icon}
+              onChange={(e) => setCreating({ ...creating, icon: e.target.value })}
+            />
+            <label className="field-label">Ordinamento</label>
+            <input
+              className="search-input"
+              type="number"
+              value={creating.sort_order}
+              onChange={(e) => setCreating({ ...creating, sort_order: Number(e.target.value) })}
+            />
+            <label className="field-label" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <input
+                type="checkbox"
+                checked={creating.requires_kyc}
+                onChange={(e) => setCreating({ ...creating, requires_kyc: e.target.checked })}
+              />
+              Richiede KYC
+            </label>
+            <div className="row-actions" style={{ marginTop: 14, justifyContent: "flex-end" }}>
+              <button className="btn btn-sm" disabled={saving} onClick={() => setCreating(null)}>
+                Annulla
+              </button>
+              <button className="btn btn-accent btn-sm" disabled={saving} onClick={handleCreate}>
+                {saving ? "Creazione..." : "Crea"}
               </button>
             </div>
           </div>
