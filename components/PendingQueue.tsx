@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { apiFetch, ApiError } from "@/lib/api";
 
 type PendingProvider = {
@@ -19,7 +19,70 @@ type PendingProvider = {
   casellario_verified: boolean | null;
   lf_delega_signed: boolean | null;
   lf_inps_registered: boolean | null;
+  // BLOCCO 9: documenti caricati in onboarding (routers/provider_onboarding.py,
+  // admin_pending()) — data URI base64 salvati in profiles_provider.documents.
+  // Prima non venivano mai renderizzati in questo pannello.
+  id_document_front: string | null;
+  id_document_back: string | null;
+  selfie_document: string | null;
+  presentation_photo: string | null;
+  casellario_doc: string | null;
+  visura_camerale: string | null;
+  is_proximity_business: boolean | null;
 };
+
+const DOC_FIELDS: { key: keyof PendingProvider; label: string }[] = [
+  { key: "id_document_front", label: "Documento - fronte" },
+  { key: "id_document_back", label: "Documento - retro" },
+  { key: "selfie_document", label: "Selfie con documento" },
+  { key: "presentation_photo", label: "Logo / Foto attività" },
+  { key: "casellario_doc", label: "Casellario giudiziale" },
+  { key: "visura_camerale", label: "Visura camerale" },
+];
+
+function downloadDataUri(dataUri: string, filename: string) {
+  const a = document.createElement("a");
+  a.href = dataUri;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+function ProviderDocuments({ row }: { row: PendingProvider }) {
+  const docs = DOC_FIELDS.filter(
+    (f) => f.key !== "visura_camerale" || row.is_proximity_business
+  ).map((f) => ({ ...f, value: row[f.key] as string | null }));
+  const anyDoc = docs.some((d) => d.value);
+  if (!anyDoc) return <span className="badge badge-amber">Nessun documento caricato</span>;
+  return (
+    <div className="doc-grid">
+      {docs.map((d) =>
+        d.value ? (
+          <div key={d.key} className="doc-item">
+            <a href={d.value} target="_blank" rel="noreferrer">
+              <img src={d.value} alt={d.label} className="doc-thumb" />
+            </a>
+            <div className="doc-label">{d.label}</div>
+            <button
+              type="button"
+              className="btn btn-sm"
+              onClick={() => downloadDataUri(d.value as string, `${row.user_id}_${d.key}.jpg`)}
+            >
+              Scarica
+            </button>
+          </div>
+        ) : (
+          <div key={d.key} className="doc-item doc-missing">
+            <div className="doc-thumb doc-thumb-empty" />
+            <div className="doc-label">{d.label}</div>
+            <span className="badge badge-amber">mancante</span>
+          </div>
+        )
+      )}
+    </div>
+  );
+}
 
 type Action = "approve" | "suspend" | "reject" | "waitlist" | "convert_lf";
 
@@ -39,6 +102,7 @@ export default function PendingQueue() {
   const [rows, setRows] = useState<PendingProvider[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   async function load() {
     setError(null);
@@ -92,55 +156,70 @@ export default function PendingQueue() {
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.user_id}>
-                <td>{r.full_name || "—"}</td>
-                <td>
-                  {r.email}
-                  {!r.email_verified && (
-                    <div>
-                      <span className="badge badge-amber">email non verificata</span>
+              <Fragment key={r.user_id}>
+                <tr>
+                  <td>{r.full_name || "—"}</td>
+                  <td>
+                    {r.email}
+                    {!r.email_verified && (
+                      <div>
+                        <span className="badge badge-amber">email non verificata</span>
+                      </div>
+                    )}
+                  </td>
+                  <td>{r.business_name || "—"}</td>
+                  <td>{r.vat_number || r.codice_fiscale || "—"}</td>
+                  <td>{r.provider_profile_type || "—"}</td>
+                  <td>
+                    <span className="badge badge-amber">{r.provider_state || "pending"}</span>
+                  </td>
+                  <td>
+                    <div className="row-actions">
+                      <button
+                        className="btn btn-sm"
+                        onClick={() => setExpandedId(expandedId === r.user_id ? null : r.user_id)}
+                      >
+                        {expandedId === r.user_id ? "Nascondi documenti" : "Documenti"}
+                      </button>
+                      <button
+                        className="btn btn-accent btn-sm"
+                        disabled={busyId === r.user_id}
+                        onClick={() => handleDecision(r.user_id, "approve")}
+                      >
+                        {ACTION_LABELS.approve}
+                      </button>
+                      <button
+                        className="btn btn-sm"
+                        disabled={busyId === r.user_id}
+                        onClick={() => handleDecision(r.user_id, "waitlist")}
+                      >
+                        {ACTION_LABELS.waitlist}
+                      </button>
+                      <button
+                        className="btn btn-sm"
+                        disabled={busyId === r.user_id}
+                        onClick={() => handleDecision(r.user_id, "suspend")}
+                      >
+                        {ACTION_LABELS.suspend}
+                      </button>
+                      <button
+                        className="btn btn-danger btn-sm"
+                        disabled={busyId === r.user_id}
+                        onClick={() => handleDecision(r.user_id, "reject")}
+                      >
+                        {ACTION_LABELS.reject}
+                      </button>
                     </div>
-                  )}
-                </td>
-                <td>{r.business_name || "—"}</td>
-                <td>{r.vat_number || r.codice_fiscale || "—"}</td>
-                <td>{r.provider_profile_type || "—"}</td>
-                <td>
-                  <span className="badge badge-amber">{r.provider_state || "pending"}</span>
-                </td>
-                <td>
-                  <div className="row-actions">
-                    <button
-                      className="btn btn-accent btn-sm"
-                      disabled={busyId === r.user_id}
-                      onClick={() => handleDecision(r.user_id, "approve")}
-                    >
-                      {ACTION_LABELS.approve}
-                    </button>
-                    <button
-                      className="btn btn-sm"
-                      disabled={busyId === r.user_id}
-                      onClick={() => handleDecision(r.user_id, "waitlist")}
-                    >
-                      {ACTION_LABELS.waitlist}
-                    </button>
-                    <button
-                      className="btn btn-sm"
-                      disabled={busyId === r.user_id}
-                      onClick={() => handleDecision(r.user_id, "suspend")}
-                    >
-                      {ACTION_LABELS.suspend}
-                    </button>
-                    <button
-                      className="btn btn-danger btn-sm"
-                      disabled={busyId === r.user_id}
-                      onClick={() => handleDecision(r.user_id, "reject")}
-                    >
-                      {ACTION_LABELS.reject}
-                    </button>
-                  </div>
-                </td>
-              </tr>
+                  </td>
+                </tr>
+                {expandedId === r.user_id && (
+                  <tr>
+                    <td colSpan={7}>
+                      <ProviderDocuments row={r} />
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
             ))}
           </tbody>
         </table>
