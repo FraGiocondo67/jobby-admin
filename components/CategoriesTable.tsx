@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import { apiFetch, ApiError } from "@/lib/api";
 import MestieriManager from "@/components/MestieriManager";
+import QuestionsEditor from "@/components/QuestionsEditor";
+
+type CategoryQuestion = { id: string; text: string; type: "choice" | "multi"; options: string[] };
 
 type AdminCategoryRow = {
   id: string;
@@ -14,6 +17,7 @@ type AdminCategoryRow = {
   requires_kyc: boolean;
   is_active: boolean;
   sort_order: number;
+  questions?: CategoryQuestion[];
 };
 
 const TYPE_TABS: { value: string; label: string }[] = [
@@ -47,6 +51,7 @@ export default function CategoriesTable() {
   const [creating, setCreating] = useState<typeof EMPTY_NEW | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
   const [showMestieri, setShowMestieri] = useState(false);
+  const [editingQuestions, setEditingQuestions] = useState<AdminCategoryRow | null>(null);
 
   useEffect(() => {
     load();
@@ -195,6 +200,9 @@ export default function CategoriesTable() {
                     <button className="btn btn-sm" onClick={() => setEditing(c)}>
                       Modifica
                     </button>
+                    <button className="btn btn-sm" onClick={() => setEditingQuestions(c)}>
+                      Campi{c.questions?.length ? ` (${c.questions.length})` : ""}
+                    </button>
                     {c.slug === "artigiani" && (
                       <button className="btn btn-sm" onClick={() => setShowMestieri(true)}>
                         Mestieri
@@ -331,6 +339,18 @@ export default function CategoriesTable() {
       )}
 
       {showMestieri && <MestieriManager onClose={() => setShowMestieri(false)} />}
+
+      {editingQuestions && (
+        <QuestionsEditor
+          categoryId={editingQuestions.id}
+          categoryLabel={editingQuestions.name_it}
+          initialQuestions={editingQuestions.questions || []}
+          onClose={() => setEditingQuestions(null)}
+          onSaved={(qs) =>
+            setRows((prev) => (prev ? prev.map((r) => (r.id === editingQuestions.id ? { ...r, questions: qs } : r)) : prev))
+          }
+        />
+      )}
     </div>
   );
 }
