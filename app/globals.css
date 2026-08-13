@@ -442,3 +442,45 @@ tr:last-child td {
   color: var(--text-muted);
   font-size: 13.5px;
 }
+
+/* Blocco 9 — modale generico di modifica (usato da CategoriesTable, riusabile
+   altrove: nessuna schermata precedente ne aveva ancora bisogno, i pannelli
+   esistenti erano solo elenco + azioni rapide senza form). */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 16px;
+}
+
+.modal {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+  width: 100%;
+  max-width: 420px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.field-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin: 12px 0 4px;
+}
+
+.field-label input[type="checkbox"] {
+  width: auto;
+}
+
+.modal .search-input {
+  width: 100%;
+  box-sizing: border-box;
+}
