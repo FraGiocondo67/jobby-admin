@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useState } from "react";
 import { apiFetch, ApiError } from "@/lib/api";
+import DocumentGrid from "@/components/DocumentGrid";
 
 type PendingProvider = {
   id: string;
@@ -29,60 +30,8 @@ type PendingProvider = {
   casellario_doc: string | null;
   visura_camerale: string | null;
   is_proximity_business: boolean | null;
+  lf_delega_signature: string | null;
 };
-
-const DOC_FIELDS: { key: keyof PendingProvider; label: string }[] = [
-  { key: "id_document_front", label: "Documento - fronte" },
-  { key: "id_document_back", label: "Documento - retro" },
-  { key: "selfie_document", label: "Selfie con documento" },
-  { key: "presentation_photo", label: "Logo / Foto attività" },
-  { key: "casellario_doc", label: "Casellario giudiziale" },
-  { key: "visura_camerale", label: "Visura camerale" },
-];
-
-function downloadDataUri(dataUri: string, filename: string) {
-  const a = document.createElement("a");
-  a.href = dataUri;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-}
-
-function ProviderDocuments({ row }: { row: PendingProvider }) {
-  const docs = DOC_FIELDS.filter(
-    (f) => f.key !== "visura_camerale" || row.is_proximity_business
-  ).map((f) => ({ ...f, value: row[f.key] as string | null }));
-  const anyDoc = docs.some((d) => d.value);
-  if (!anyDoc) return <span className="badge badge-amber">Nessun documento caricato</span>;
-  return (
-    <div className="doc-grid">
-      {docs.map((d) =>
-        d.value ? (
-          <div key={d.key} className="doc-item">
-            <a href={d.value} target="_blank" rel="noreferrer">
-              <img src={d.value} alt={d.label} className="doc-thumb" />
-            </a>
-            <div className="doc-label">{d.label}</div>
-            <button
-              type="button"
-              className="btn btn-sm"
-              onClick={() => downloadDataUri(d.value as string, `${row.user_id}_${d.key}.jpg`)}
-            >
-              Scarica
-            </button>
-          </div>
-        ) : (
-          <div key={d.key} className="doc-item doc-missing">
-            <div className="doc-thumb doc-thumb-empty" />
-            <div className="doc-label">{d.label}</div>
-            <span className="badge badge-amber">mancante</span>
-          </div>
-        )
-      )}
-    </div>
-  );
-}
 
 type Action = "approve" | "suspend" | "reject" | "waitlist" | "convert_lf";
 
@@ -215,7 +164,7 @@ export default function PendingQueue() {
                 {expandedId === r.user_id && (
                   <tr>
                     <td colSpan={7}>
-                      <ProviderDocuments row={r} />
+                      <DocumentGrid documents={r} isProximityBusiness={!!r.is_proximity_business} filenamePrefix={r.user_id} />
                     </td>
                   </tr>
                 )}

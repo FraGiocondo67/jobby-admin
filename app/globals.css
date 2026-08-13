@@ -361,6 +361,37 @@ tr:last-child td {
   margin-top: 10px;
 }
 
+/* BLOCCO 9: dettaglio utente (components/UserDetail.tsx). */
+.detail-section {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.detail-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px 16px;
+}
+
+.detail-field-label {
+  font-size: 11px;
+  color: var(--text-muted, #666);
+}
+
+.detail-field-value {
+  font-size: 13.5px;
+  color: var(--text);
+  word-break: break-word;
+}
+
 .filters-bar {
   display: flex;
   gap: 10px;

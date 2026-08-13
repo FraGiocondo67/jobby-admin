@@ -1,19 +1,23 @@
 import FeeSettings from "@/components/FeeSettings";
+import VerticalFees from "@/components/VerticalFees";
 
 export default function FeesPage() {
   return (
     <div>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Commissione JOBBY</h1>
+          <h1 className="page-title">Commissioni</h1>
           <div className="page-subtitle">
-            Configurazione mostrata al provider in "La commissione JOBBY" durante l&apos;onboarding, articolata per tipo
-            di attività.
+            Markup reale per verticale (addebitato ad ogni prestazione) e testo informativo "La commissione JOBBY"
+            mostrato in onboarding.
           </div>
         </div>
       </div>
 
-      <FeeSettings />
+      <VerticalFees />
+      <div style={{ marginTop: 20 }}>
+        <FeeSettings />
+      </div>
     </div>
   );
 }

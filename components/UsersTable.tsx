@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiFetch, ApiError } from "@/lib/api";
+import UserDetail from "@/components/UserDetail";
 
 type AdminUserRow = {
   id: string;
@@ -13,6 +14,9 @@ type AdminUserRow = {
   preferred_lang: string | null;
   is_email_verified: boolean;
   created_at: string;
+  last_login_at: string | null;
+  client_trust_score: number | null;
+  provider_trust_score: number | null;
 };
 
 const STATUS_TABS: { value: string; label: string }[] = [
@@ -48,6 +52,7 @@ export default function UsersTable() {
   const [qInput, setQInput] = useState("");
   const [offset, setOffset] = useState(0);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [detailId, setDetailId] = useState<string | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setQ(qInput.trim()), 350);
@@ -134,6 +139,8 @@ export default function UsersTable() {
                 <th>Telefono</th>
                 <th>Ruolo</th>
                 <th>Stato</th>
+                <th>Trust</th>
+                <th>Ultimo login</th>
                 <th>Registrato il</th>
                 <th>Azioni</th>
               </tr>
@@ -157,9 +164,14 @@ export default function UsersTable() {
                   <td>
                     <span className={`badge ${STATUS_BADGE[u.status] || "badge-gray"}`}>{u.status}</span>
                   </td>
+                  <td>{u.provider_trust_score ?? u.client_trust_score ?? "—"}</td>
+                  <td>{u.last_login_at ? new Date(u.last_login_at).toLocaleString("it-IT") : "—"}</td>
                   <td>{new Date(u.created_at).toLocaleDateString("it-IT")}</td>
                   <td>
                     <div className="row-actions">
+                      <button className="btn btn-sm" onClick={() => setDetailId(u.id)}>
+                        Dettaglio
+                      </button>
                       {u.status !== "active" && (
                         <button
                           className="btn btn-accent btn-sm"
@@ -194,6 +206,8 @@ export default function UsersTable() {
           </div>
         </>
       )}
+
+      {detailId && <UserDetail userId={detailId} onClose={() => setDetailId(null)} />}
     </div>
   );
 }
